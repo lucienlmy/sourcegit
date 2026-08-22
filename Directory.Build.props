@@ -24,10 +24,14 @@
   </PropertyGroup>
 
   <!--
-    AfterBuild 阶段把项目输出目录所有文件复制到 UnifiedBuildOutputPath
-    使用 Copy（而非 Move）+ SkipUnchangedFiles：
-      - 保留原 bin\Debug 输出以维持 MSBuild 增量构建和调试 attach
-      - SkipUnchangedFiles 避免每次重复复制未变更文件
+    统一把主项目输出集中到 UnifiedBuildOutputPath（sourcegit\output\）。
+    ⚠ Debug 构建 / Debug 发布：不移动 / 不复制，保持 bin\Debug / PublishDir 原样，方便 VS/Rider F5 直接调试。
+    ⚠ Release 构建（dotnet build -c Release / VS Release F5）：
+       把 $(TargetDir) 下所有文件 Move 到 output\（Build 模式下没有 PublishDir，所以直接搬 TargetDir）。
+    ⚠ Release 发布（dotnet publish -c Release）：
+       这里 **Build 阶段的 Move 不跑**（因为 Publish 流程需要先把 TargetDir 的文件交给 Publish target 生成
+       $(PublishDir) 最终产物），只在 Publish 全部完成之后，一次性 Move $(PublishDir) 到 output\。
+       这样避免 Build 先把 TargetDir 搬空，导致 Publish 拿不到文件报错。
   -->
   <Target Name="CopyToUnifiedBuildFolder"
           AfterTargets="Build"
@@ -37,11 +41,80 @@
       <UnifiedOutputFiles Include="$(TargetDir)**\*.*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(UnifiedOutputFiles)"
-          DestinationFolder="$(UnifiedBuildOutputPath)%(RecursiveDir)"
-          SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <_UnifiedDestFiles Include="@(UnifiedOutputFiles->'$(UnifiedBuildOutputPath)%(RecursiveDir)%(Filename)%(Extension)')" />
+    </ItemGroup>
 
-    <Message Text="📦 已统一部署 $(AssemblyName) 输出到：$(UnifiedBuildOutputPath)" Importance="high" />
+    <!-- Debug Build：啥也不做 -->
+    <Message Text="🔧 Debug 构建：保持输出在 $(TargetDir)，不移动到 $(UnifiedBuildOutputPath)（方便 F5 调试）"
+             Condition="'$(Configuration)' == 'Debug'"
+             Importance="high" />
+
+    <!--
+      Release Build：只有"真的在跑发布流程"时才跳过 Build 阶段的 Move。
+      ⚠ 注意：不能用 $(PublishDir) 是否存在判断！因为我们强制了 RuntimeIdentifier=win-x64，
+         .NET SDK 会在 **任何 Build 场景**都把 PublishDir 默认设为 bin\...\publish\（一个路径占位属性），
+         结果就是你日志里看到的：
+           🚦 Release Build 检测到 Publish 场景（PublishDir=bin\Release\net10.0\win-x64\publish\）
+         但那实际上只是纯 Build，根本没跑 Publish target → Move 被误跳过。
+      ✅ 正确的「真的在 Publish」信号（SDK 内置）：
+         - $(IsPublish) = true            dotnet publish 内部会设这个属性
+         - $(DeployOnBuild) = true        VS 发布向导 / CI 的 MSBuild /t:Build /p:DeployOnBuild=true
+         - $(PublishProfileName) 非空     VS 用 .pubxml 发布配置
+         三者任一命中 → 才判定 Publish 场景，Build 阶段不 Move。
+    -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+      <_IsPublishing>false</_IsPublishing>
+      <_IsPublishing Condition="'$(IsPublish)' == 'true' OR '$(DeployOnBuild)' == 'true' OR '$(PublishProfileName)' != ''">true</_IsPublishing>
+    </PropertyGroup>
+
+    <Message Text="🚦 Release Build：检测到 Publish 流程（IsPublish=$(IsPublish) DeployOnBuild=$(DeployOnBuild) PublishProfileName=$(PublishProfileName)）。保留 $(TargetDir) 文件给 Publish target 稍后使用，Build 阶段不移动"
+             Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' == 'true'"
+             Importance="high" />
+
+    <Delete Files="@(_UnifiedDestFiles)" Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' != 'true' AND Exists('%(FullPath)')" />
+    <Move SourceFiles="@(UnifiedOutputFiles)"
+          DestinationFolder="$(UnifiedBuildOutputPath)%(RecursiveDir)"
+          Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' != 'true'" />
+    <Message Text="📦 Release 构建：已把 $(AssemblyName) 从 $(TargetDir) 移动到 $(UnifiedBuildOutputPath)"
+             Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' != 'true'"
+             Importance="high" />
+  </Target>
+
+  <!--
+    Release Publish 场景：SDK 的 Publish target 自己会把最终发布产物写进 $(PublishDir)
+    （我们的项目强制 RuntimeIdentifier=win-x64，所以 PublishDir 就是 TargetDir\publish\）。
+    ✅ Publish target 已跑完 → 再 Move $(PublishDir) → UnifiedBuildOutputPath：
+       对 dotnet publish 的"是否发布成功"不会产生任何影响，只是把产物搬运到你最终要部署的地方。
+    👉 这一步 + 上面 Build 阶段的互斥判断，保证：
+       - dotnet build -c Release  → 走第一个 Target：Move TargetDir → output\
+       - dotnet publish -c Release → 走第二个 Target：Move PublishDir → output\（Build 阶段不动）
+  -->
+  <Target Name="CopyToUnifiedBuildPublishFolder"
+          AfterTargets="Publish"
+          Condition="'$(AssemblyName)' == 'SourceGit' OR '$(AssemblyName)' == 'BuildManager'">
+
+    <ItemGroup>
+      <UnifiedPublishFiles Include="$(PublishDir)**\*.*" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_UnifiedPublishDestFiles Include="@(UnifiedPublishFiles->'$(UnifiedBuildOutputPath)%(RecursiveDir)%(Filename)%(Extension)')" />
+    </ItemGroup>
+
+    <!-- Debug Publish：仍不移动（保持 PublishDir 原样） -->
+    <Message Text="🔧 Debug Publish：保持发布输出在 $(PublishDir)，不移动到 $(UnifiedBuildOutputPath)"
+             Condition="'$(Configuration)' == 'Debug'"
+             Importance="high" />
+
+    <!-- Release Publish：把整个 PublishDir 移动到 output\ -->
+    <Delete Files="@(_UnifiedPublishDestFiles)" Condition="'$(Configuration)' == 'Release' AND Exists('%(FullPath)')" />
+    <Move SourceFiles="@(UnifiedPublishFiles)"
+          DestinationFolder="$(UnifiedBuildOutputPath)%(RecursiveDir)"
+          Condition="'$(Configuration)' == 'Release'" />
+    <Message Text="📦 Release Publish：已把 $(AssemblyName) 从 $(PublishDir) 移动到 $(UnifiedBuildOutputPath)（可直接发布）"
+             Condition="'$(Configuration)' == 'Release'"
+             Importance="high" />
   </Target>
 
 </Project>
