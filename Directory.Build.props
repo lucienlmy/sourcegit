@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  统一构建后部署文件到「sourcegit\output\」文件夹
+  让 BuildManager.exe 和 SourceGit.exe 最终落在同一目录，可共享 data 文件夹和 %APPDATA%\SourceGit 配置
+  自动应用到本目录及子目录下所有 .csproj（向上递归查找）
+  不使用 sourcegit\build\，因为 sourcegit 已有 build/scripts 等构建脚本/资源目录放里面，避免覆盖冲突
+
+  作用范围：
+    - SourceGit.csproj 在 sourcegit\src\ 下，向上查找经过 src\ → sourcegit\，找到本文件
+    - BuildManager.csproj 在 sourcegit\项目构建管理器\BuildManager\ 下，向上查找经过 BuildManager\ → 项目构建管理器\ → sourcegit\，找到本文件
+    - AvaloniaEdit/AvaloniaEdit.TextMate 等子项目也能找到本文件，但用 Condition 限定只对主项目生效
+-->
+<Project>
+
+  <PropertyGroup>
+    <!-- 统一部署目录：sourcegit 下的 output 子目录（与本文件同级的 output 子目录），避开已存在的 build/ 脚本目录 -->
+    <UnifiedBuildOutputPath>$(MSBuildThisFileDirectory)output\</UnifiedBuildOutputPath>
+
+    <!-- 只生成 Windows x64 平台的运行时文件，过滤其他平台的 runtimes 目录 -->
+    <!-- 用 Condition 限定只对 SourceGit 和 BuildManager 主项目生效，避免 AvaloniaEdit 等依赖项目也被注入 RID -->
+    <!-- 用 Condition 允许命令行 -r 覆盖（如 -r win-arm64 测试） -->
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' AND ('$(MSBuildProjectName)' == 'SourceGit' OR '$(MSBuildProjectName)' == 'BuildManager')">win-x64</RuntimeIdentifier>
+    <RuntimeIdentifiers Condition="'$(MSBuildProjectName)' == 'SourceGit' OR '$(MSBuildProjectName)' == 'BuildManager'">win-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <!--
+    AfterBuild 阶段把项目输出目录所有文件复制到 UnifiedBuildOutputPath
+    使用 Copy（而非 Move）+ SkipUnchangedFiles：
+      - 保留原 bin\Debug 输出以维持 MSBuild 增量构建和调试 attach
+      - SkipUnchangedFiles 避免每次重复复制未变更文件
+  -->
+  <Target Name="CopyToUnifiedBuildFolder"
+          AfterTargets="Build"
+          Condition="'$(AssemblyName)' == 'SourceGit' OR '$(AssemblyName)' == 'BuildManager'">
+
+    <ItemGroup>
+      <UnifiedOutputFiles Include="$(TargetDir)**\*.*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(UnifiedOutputFiles)"
+          DestinationFolder="$(UnifiedBuildOutputPath)%(RecursiveDir)"
+          SkipUnchangedFiles="true" />
+
+    <Message Text="📦 已统一部署 $(AssemblyName) 输出到：$(UnifiedBuildOutputPath)" Importance="high" />
+  </Target>
+
+</Project>

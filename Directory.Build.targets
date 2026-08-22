@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Directory.Build.targets 在 csproj 末尾 import（晚于 NuGet 包的 .targets，如 Avalonia.BuildServices.targets）
+  用于覆盖 NuGet 包里定义的 Target
+
+  作用范围：与同目录的 Directory.Build.props 一致，sourcegit 下所有子项目自动找到
+-->
+<Project>
+
+  <!--
+    禁用 Avalonia BuildServices 的 Telemetry 任务（AvaloniaStatsTask）
+    该任务会向 C:\Users\<user>\AppData\Local\AvaloniaUI\BuildServices\buildtasks.log 写入遥测数据
+    在某些沙箱环境（如 TRAE Sandbox）下会被拒绝写入，导致构建失败
+    通过在末尾覆盖同名 Target 把 Condition 置为 false 跳过该任务
+  -->
+  <Target Name="AvaloniaStats" Condition="false" />
+
+</Project>

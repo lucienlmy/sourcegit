@@ -144,6 +144,25 @@ namespace SourceGit.Native
             finder.FindJetBrainsFromToolbox(() => Path.Combine(localAppDataDir, @"JetBrains\Toolbox"));
             finder.SublimeText(FindSublimeText);
             finder.Zed(FindZed);
+
+            // 检测同目录下的 BuildManager.exe（与 sourcegit 编译输出在同一文件夹）
+            // 提供右键「Open With External Tools」→「项目构建管理器」→「编译此仓库」入口
+            // 调用方式：BuildManager.exe --new-tab "<repo-path>"
+            var exeDir = Path.GetDirectoryName(Environment.ProcessPath);
+            if (!string.IsNullOrEmpty(exeDir))
+            {
+                var buildManagerExe = Path.Combine(exeDir, "BuildManager.exe");
+                if (File.Exists(buildManagerExe))
+                {
+                    finder.Tools.Add(new Models.ExternalTool(
+                        "项目构建管理器",
+                        "build_manager",
+                        buildManagerExe,
+                        repo => [new Models.ExternalTool.LaunchOption("编译此仓库", $"--new-tab \"{repo}\"")],
+                        supportOpenFolder: true));
+                }
+            }
+
             return finder.Tools;
         }
 

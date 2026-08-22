@@ -6,6 +6,8 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Styling;
 
 namespace SourceGit.Views
@@ -366,6 +368,33 @@ namespace SourceGit.Views
                         }
 
                         menu.Items.Add(moveTo);
+                    }
+
+                    // 检测同目录下的 BuildManager.exe，添加「编译此仓库」入口
+                    var exeDir = Path.GetDirectoryName(Environment.ProcessPath);
+                    if (!string.IsNullOrEmpty(exeDir))
+                    {
+                        var buildManagerExe = Path.Combine(exeDir, "BuildManager.exe");
+                        if (File.Exists(buildManagerExe))
+                        {
+                            var compileRepo = new MenuItem();
+                            compileRepo.Header = "编译此仓库";
+                            // 使用 SourceGit 内置的终端图标（Icons.Terminal），
+                            // 与"编译/执行外部命令"语义匹配，也符合右键菜单默认 Path 风格
+                            compileRepo.Icon = this.CreateMenuIcon("Icons.Terminal");
+
+                            compileRepo.Click += (_, ev) =>
+                            {
+                                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
+                                {
+                                    FileName = buildManagerExe,
+                                    Arguments = $"--new-tab \"{repo.FullPath}\"",
+                                    UseShellExecute = true,
+                                });
+                                ev.Handled = true;
+                            };
+                            menu.Items.Add(compileRepo);
+                        }
                     }
 
                     menu.Items.Add(new MenuItem() { Header = "-" });

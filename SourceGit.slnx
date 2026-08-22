@@ -71,4 +71,5 @@
 		<File Path="THIRD-PARTY-LICENSES.md"/>
 		<File Path="TRANSLATION.md"/>
 	</Folder>
+	<Project Path="项目构建管理器/BuildManager/BuildManager.csproj" />
 </Solution>
