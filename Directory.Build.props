@@ -72,9 +72,32 @@
              Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' == 'true'"
              Importance="high" />
 
-    <Delete Files="@(_UnifiedDestFiles)" Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' != 'true' AND Exists('%(FullPath)')" />
+    <!-- 关闭可能锁定 output 文件的进程（SourceGit/BuildManager），确保移动操作成功 -->
+    <Message Text="🔧 检测并关闭可能锁定 output 的进程..."
+             Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' != 'true'"
+             Importance="high" />
+    <Message Text="⚠️ 正在编译 BuildManager 自身，将自动关闭 BuildManager 进程以释放文件锁，编译完成后需手动重启"
+             Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' != 'true' AND '$(AssemblyName)' == 'BuildManager'"
+             Importance="high" />
+    <Message Text="⚠️ 正在编译 SourceGit，将自动关闭 SourceGit 进程以释放文件锁"
+             Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' != 'true' AND '$(AssemblyName)' == 'SourceGit'"
+             Importance="high" />
+    <Exec Command="powershell -NoProfile -Command &quot;$procs = Get-Process SourceGit,BuildManager -ErrorAction SilentlyContinue; if ($procs) { $procs | ForEach-Object { Write-Host ('   关闭进程: ' + $_.ProcessName + ' (PID=' + $_.Id + ')'); Stop-Process -Id $_.Id -Force }; Start-Sleep -Milliseconds 500; Write-Host '   进程已关闭，文件锁已释放' } else { Write-Host '   无锁定进程，跳过' }&quot;"
+          IgnoreExitCode="true"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="high"
+          Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' != 'true'" />
+
+    <Delete Files="@(_UnifiedDestFiles)"
+            Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' != 'true' AND Exists('%(FullPath)')" />
     <Move SourceFiles="@(UnifiedOutputFiles)"
           DestinationFolder="$(UnifiedBuildOutputPath)%(RecursiveDir)"
+          Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' != 'true'" />
+    <!-- 清理移动后留下的空目录，向上延伸到 bin\ 但不跨越 -->
+    <Exec Command="powershell -NoProfile -Command &quot;$d = '$(TargetDir)'; if (Test-Path $d) { Get-ChildItem $d -Recurse -Directory | Sort-Object { $_.FullName.Length } -Descending | ForEach-Object { if ((Get-ChildItem $_.FullName -Force).Count -eq 0) { Remove-Item $_.FullName -Force; Write-Host ('   清理空目录: ' + $_.FullName) } }; if ((Get-ChildItem $d -Force).Count -eq 0) { Remove-Item $d -Force; Write-Host ('   清理空目录: ' + $d) }; $cur = Split-Path $d -Parent; while ($cur) { $name = Split-Path $cur -Leaf; if ($name -notmatch '^(net\d+\.\d+|net\d+|Debug|Release|win-.*|linux-.*|osx-.*|arm.*|x64|x86)$') { break }; if (-not (Test-Path $cur)) { $cur = Split-Path $cur -Parent; continue }; $cnt = (Get-ChildItem $cur -Force -ErrorAction SilentlyContinue).Count; if ($cnt -eq 0) { Remove-Item $cur -Force; Write-Host ('   清理空目录: ' + $cur) } else { break }; $cur = Split-Path $cur -Parent } }&quot;"
+          IgnoreExitCode="true"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="high"
           Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' != 'true'" />
     <Message Text="📦 Release 构建：已把 $(AssemblyName) 从 $(TargetDir) 移动到 $(UnifiedBuildOutputPath)"
              Condition="'$(Configuration)' == 'Release' AND '$(_IsPublishing)' != 'true'"
@@ -108,9 +131,31 @@
              Importance="high" />
 
     <!-- Release Publish：把整个 PublishDir 移动到 output\ -->
+    <!-- 先关闭可能锁定文件的进程 -->
+    <Message Text="🔧 检测并关闭可能锁定 output 的进程..."
+             Condition="'$(Configuration)' == 'Release'"
+             Importance="high" />
+    <Message Text="⚠️ 正在发布 BuildManager，将自动关闭 BuildManager 进程以释放文件锁"
+             Condition="'$(Configuration)' == 'Release' AND '$(AssemblyName)' == 'BuildManager'"
+             Importance="high" />
+    <Message Text="⚠️ 正在发布 SourceGit，将自动关闭 SourceGit 进程以释放文件锁"
+             Condition="'$(Configuration)' == 'Release' AND '$(AssemblyName)' == 'SourceGit'"
+             Importance="high" />
+    <Exec Command="powershell -NoProfile -Command &quot;$procs = Get-Process SourceGit,BuildManager -ErrorAction SilentlyContinue; if ($procs) { $procs | ForEach-Object { Write-Host ('   关闭进程: ' + $_.ProcessName + ' (PID=' + $_.Id + ')'); Stop-Process -Id $_.Id -Force }; Start-Sleep -Milliseconds 500; Write-Host '   进程已关闭，文件锁已释放' } else { Write-Host '   无锁定进程，跳过' }&quot;"
+          IgnoreExitCode="true"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="high"
+          Condition="'$(Configuration)' == 'Release'" />
+
     <Delete Files="@(_UnifiedPublishDestFiles)" Condition="'$(Configuration)' == 'Release' AND Exists('%(FullPath)')" />
     <Move SourceFiles="@(UnifiedPublishFiles)"
           DestinationFolder="$(UnifiedBuildOutputPath)%(RecursiveDir)"
+          Condition="'$(Configuration)' == 'Release'" />
+    <!-- 清理移动后留下的空目录，向上延伸到 bin\ 但不跨越 -->
+    <Exec Command="powershell -NoProfile -Command &quot;$d = '$(PublishDir)'; if (Test-Path $d) { Get-ChildItem $d -Recurse -Directory | Sort-Object { $_.FullName.Length } -Descending | ForEach-Object { if ((Get-ChildItem $_.FullName -Force).Count -eq 0) { Remove-Item $_.FullName -Force; Write-Host ('   清理空目录: ' + $_.FullName) } }; if ((Get-ChildItem $d -Force).Count -eq 0) { Remove-Item $d -Force; Write-Host ('   清理空目录: ' + $d) }; $cur = Split-Path $d -Parent; while ($cur) { $name = Split-Path $cur -Leaf; if ($name -notmatch '^(net\d+\.\d+|net\d+|Debug|Release|win-.*|linux-.*|osx-.*|arm.*|x64|x86)$') { break }; if (-not (Test-Path $cur)) { $cur = Split-Path $cur -Parent; continue }; $cnt = (Get-ChildItem $cur -Force -ErrorAction SilentlyContinue).Count; if ($cnt -eq 0) { Remove-Item $cur -Force; Write-Host ('   清理空目录: ' + $cur) } else { break }; $cur = Split-Path $cur -Parent } }&quot;"
+          IgnoreExitCode="true"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="high"
           Condition="'$(Configuration)' == 'Release'" />
     <Message Text="📦 Release Publish：已把 $(AssemblyName) 从 $(PublishDir) 移动到 $(UnifiedBuildOutputPath)（可直接发布）"
              Condition="'$(Configuration)' == 'Release'"
