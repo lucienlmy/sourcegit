@@ -150,6 +150,27 @@ namespace SourceGit
                             resDic[$"Color.{kv.Key}"] = kv.Value;
                     }
 
+                    // DisableSubtleHover 优先级最高：只要 true，就把 Color.SubtleHover 强制透明，等价于关闭 hover 底色
+                    // （这样不会影响用户同时在 BasicColors 里写 SubtleHover：true 时总是优先透明）
+                    if (overrides.DisableSubtleHover == true)
+                        resDic["Color.SubtleHover"] = Colors.Transparent;
+
+                    // 覆盖悬浮过渡时长（毫秒 → TimeSpan）
+                    if (overrides.HoverTransitionMs.HasValue)
+                    {
+                        var ms = overrides.HoverTransitionMs.Value;
+                        if (ms < 0) ms = 0;
+                        if (ms > 5000) ms = 5000;
+                        resDic["Duration.Hover"] = TimeSpan.FromMilliseconds(ms);
+                    }
+
+                    // 覆盖悬浮过渡缓动函数。识别常用缓动的类名（大小写不敏感，可省略 "Ease" 后缀）
+                    if (!string.IsNullOrEmpty(overrides.HoverTransitionEasing))
+                    {
+                        var easing = CreateEasingByName(overrides.HoverTransitionEasing);
+                        if (easing != null) resDic["Easing.Hover"] = easing;
+                    }
+
                     if (overrides.GraphColors.Count > 0)
                         Models.CommitGraph.SetPens(overrides.GraphColors, overrides.GraphPenThickness);
                     else
@@ -167,6 +188,28 @@ namespace SourceGit
             {
                 Models.CommitGraph.SetDefaultPens();
             }
+        }
+
+        private static Avalonia.Animation.Easings.IEasing CreateEasingByName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return null;
+
+            var candidates = new string[] {
+                name.Trim(),
+                name.Trim() + "Ease",       // 允许写 "CubicEaseOut" 或 "CubicEaseOutEase"（后者虽冗余也兼容）
+                name.Trim().EndsWith("Ease", StringComparison.OrdinalIgnoreCase) ? name.Trim().Substring(0, name.Trim().Length - 4) : name.Trim(),
+            };
+
+            foreach (var c in candidates)
+            {
+                // 先在 Avalonia.Animation.Easings 命名空间里找（大小写不敏感）
+                var t = Type.GetType("Avalonia.Animation.Easings." + c + ", Avalonia.Base", false, true);
+                if (t != null && typeof(Avalonia.Animation.Easings.IEasing).IsAssignableFrom(t) && t.GetConstructor(Type.EmptyTypes) != null)
+                {
+                    try { return (Avalonia.Animation.Easings.IEasing)Activator.CreateInstance(t); } catch { /* ignore */ }
+                }
+            }
+            return null;
         }
 
         public static void SetFonts(string defaultFont, string monospaceFont)

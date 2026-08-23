@@ -1,5 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+                    xmlns:easing="using:Avalonia.Animation.Easings">
   <ResourceDictionary.ThemeDictionaries>
     <ResourceDictionary x:Key="Light">
       <Color x:Key="Color.Window">#FFF0F5F9</Color>
@@ -33,6 +35,8 @@
       <Color x:Key="Color.InlineCode">#FFE4E4E4</Color>
       <Color x:Key="Color.InlineCodeFG">Black</Color>
       <Color x:Key="Color.HistoryBG">#FFF0F5F9</Color>
+      <!-- 细腻悬浮底色：低透明度黑，WinForm 风格浅灰感，用于按钮/切换/列表项 hover -->
+      <Color x:Key="Color.SubtleHover">#1A000000</Color>
     </ResourceDictionary>
 
     <ResourceDictionary x:Key="Dark">
@@ -67,6 +71,8 @@
       <Color x:Key="Color.InlineCode">#FF383838</Color>
       <Color x:Key="Color.InlineCodeFG">#FFF0F0F0</Color>
       <Color x:Key="Color.HistoryBG">#FF272727</Color>
+      <!-- 细腻悬浮底色：低透明度白，暗色下提亮一点，WinForm 风格浅灰感 -->
+      <Color x:Key="Color.SubtleHover">#22FFFFFF</Color>
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -103,4 +109,9 @@
   <SolidColorBrush x:Key="Brush.InlineCode" Color="{DynamicResource Color.InlineCode}"/>
   <SolidColorBrush x:Key="Brush.InlineCodeFG" Color="{DynamicResource Color.InlineCodeFG}"/>
   <SolidColorBrush x:Key="Brush.HistoryBG" Color="{DynamicResource Color.HistoryBG}"/>
+  <!-- 细腻悬浮底色：按钮 / 列表项 / 切换开关 hover 时统一使用的低透明度覆盖层 -->
+  <SolidColorBrush x:Key="Brush.SubtleHover" Color="{DynamicResource Color.SubtleHover}"/>
+  <!-- 悬浮过渡的默认兜底：160ms + CubicEaseOut。若 ThemeOverrides 设置了 HoverTransitionMs / HoverTransitionEasing 会覆盖本资源 -->
+  <sys:TimeSpan x:Key="Duration.Hover">0:0:0.16</sys:TimeSpan>
+  <easing:CubicEaseOut x:Key="Easing.Hover"/>
 </ResourceDictionary>

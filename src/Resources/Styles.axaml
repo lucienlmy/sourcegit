@@ -636,13 +636,27 @@
     <Setter Property="BorderThickness" Value="0"/>
     <Setter Property="Background" Value="Transparent"/>
     <Setter Property="VerticalAlignment" Value="Center"/>
+    <!-- 悬停：底色+不透明度的统一 EaseOut 过渡，符合 WinForm 淡色低透明度风格；时长/缓动可通过 ThemeOverrides 的 Duration.Hover / Easing.Hover 覆盖 -->
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="{DynamicResource Duration.Hover}" Easing="{DynamicResource Easing.Hover}"/>
+      </Transitions>
+    </Setter>
   </Style>
   <Style Selector="Button.icon_button /template/ ContentPresenter#PART_ContentPresenter, RepeatButton.icon_button /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="Transparent"/>
     <Setter Property="Opacity" Value="0.8"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="{DynamicResource Duration.Hover}" Easing="{DynamicResource Easing.Hover}"/>
+        <BrushTransition Property="Background" Duration="{DynamicResource Duration.Hover}" Easing="{DynamicResource Easing.Hover}"/>
+      </Transitions>
+    </Setter>
   </Style>
   <Style Selector="Button.icon_button:pointerover /template/ ContentPresenter#PART_ContentPresenter, RepeatButton.icon_button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Opacity" Value="1"/>
+    <Setter Property="Background" Value="{DynamicResource Brush.SubtleHover}"/>
   </Style>
   <Style Selector="Button.icon_button:disabled Path">
     <Setter Property="Fill" Value="{DynamicResource Brush.FG2}"/>
@@ -1127,6 +1141,12 @@
     <Setter Property="Height" Value="24"/>
     <Setter Property="BorderThickness" Value="0"/>
     <Setter Property="Background" Value="Transparent"/>
+    <!-- 低透明度悬停 + EaseOut 过渡，选中/未选中之间也有过渡；时长/缓动可通过 ThemeOverrides 覆盖 -->
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="{DynamicResource Duration.Hover}" Easing="{DynamicResource Easing.Hover}"/>
+      </Transitions>
+    </Setter>
     <Setter Property="Template">
       <ControlTemplate>
         <Border CornerRadius="12" Background="{TemplateBinding Background}">
@@ -1144,6 +1164,14 @@
 
     <Style Selector="^:checked">
       <Setter Property="Background" Value="{DynamicResource Brush.Accent}"/>
+    </Style>
+
+    <!-- 悬停：未选中时上一层半透明底色；选中时用稍深一点的 AccentHovered 代替裸 Accent，有层次感 -->
+    <Style Selector="^:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Brush.SubtleHover}"/>
+    </Style>
+    <Style Selector="^:checked:pointerover">
+      <Setter Property="Background" Value="{DynamicResource Brush.AccentHovered}"/>
     </Style>
 
     <Style Selector="^ Path">
@@ -1174,6 +1202,12 @@
     <Setter Property="Background" Value="Transparent"/>
     <Setter Property="HorizontalAlignment" Value="Stretch"/>
     <Setter Property="VerticalAlignment" Value="Stretch"/>
+    <!-- 悬停底色 EaseOut 过渡；时长/缓动可通过 ThemeOverrides 覆盖 -->
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="{DynamicResource Duration.Hover}" Easing="{DynamicResource Easing.Hover}"/>
+      </Transitions>
+    </Setter>
     <Setter Property="Template">
       <ControlTemplate>
         <Grid ColumnDefinitions="Auto,*" Background="Transparent">
@@ -1212,7 +1246,7 @@
     <Setter Property="RenderTransform" Value="rotate(0deg)"/>
   </Style>
   <Style Selector="ToggleButton.group_expander:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Background" Value="{DynamicResource Brush.SubtleHover}"/>
   </Style>
 
   <Style Selector="ToggleButton.filter_expander">

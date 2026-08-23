@@ -71,8 +71,18 @@
                 <Setter Property="Padding" Value="0"/>
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="CornerRadius" Value="0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <!-- 悬停：细腻底色 EaseOut 过渡，历史/本地更改/贮藏 三个入口都有清晰 hover 反馈；时长/缓动可通过 ThemeOverrides 覆盖 -->
+                <Setter Property="Transitions">
+                  <Transitions>
+                    <BrushTransition Property="Background" Duration="{DynamicResource Duration.Hover}" Easing="{DynamicResource Easing.Hover}"/>
+                  </Transitions>
+                </Setter>
               </Style>
-              <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+              <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+                <Setter Property="Background" Value="{DynamicResource Brush.SubtleHover}"/>
+              </Style>
+              <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
                 <Setter Property="Background" Value="Transparent"/>
               </Style>
               <Style Selector="ListBoxItem:selected">
