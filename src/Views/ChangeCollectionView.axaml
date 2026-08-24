@@ -31,6 +31,7 @@
   <UserControl.DataTemplates>
     <DataTemplate DataType="vm:ChangeCollectionAsTree">
       <v:ChangeCollectionContainer Focusable="True"
+                                   Classes="change_collection_list"
                                    ItemsSource="{Binding Rows}"
                                    SelectedItems="{Binding SelectedRows, Mode=TwoWay}"
                                    SelectionMode="Multiple"
@@ -81,6 +82,7 @@
 
     <DataTemplate DataType="vm:ChangeCollectionAsGrid">
       <v:ChangeCollectionContainer Focusable="True"
+                                   Classes="change_collection_list"
                                    ItemsSource="{Binding Changes}"
                                    SelectedItems="{Binding SelectedChanges, Mode=TwoWay}"
                                    SelectionMode="Multiple"
@@ -116,6 +118,7 @@
 
     <DataTemplate DataType="vm:ChangeCollectionAsList">
       <v:ChangeCollectionContainer Focusable="True"
+                                   Classes="change_collection_list"
                                    ItemsSource="{Binding Changes}"
                                    SelectedItems="{Binding SelectedChanges, Mode=TwoWay}"
                                    SelectionMode="Multiple"

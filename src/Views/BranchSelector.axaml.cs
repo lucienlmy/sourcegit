@@ -292,8 +292,13 @@ namespace SourceGit.Views
 
         private void OnDropDownItemPointerPressed(object sender, PointerPressedEventArgs e)
         {
-            if (sender is Control { DataContext: Models.Branch branch })
+            if (sender is Control ctrl && ctrl.DataContext is Models.Branch branch)
+            {
+                // 手动点亮 ListBoxItem :selected 伪类，否则 PointerPressed 自定义 + e.Handled 会吞掉默认选行逻辑
+                var listBox = _popup?.Child?.FindDescendantOfType<ListBox>();
+                if (listBox != null) listBox.SelectedItem = branch;
                 SelectedBranch = branch;
+            }
 
             IsDropDownOpened = false;
             e.Handled = true;

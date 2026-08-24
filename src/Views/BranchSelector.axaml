@@ -118,6 +118,7 @@
                   </TextBox>
 
                   <v:ListBoxEx Grid.Row="1"
+                               x:Name="PART_DropDownList"
                                Focusable="True"
                                Margin="0,4"
                                MaxHeight="360"
@@ -127,6 +128,9 @@
                                SelectedItem="{TemplateBinding SelectedBranch, Mode=OneWay}"
                                SelectionChanged="OnDropDownListSelectionChanged"
                                KeyDown="OnDropDownListKeyDown">
+                    <ListBox.Classes>
+                      <x:String>branch_selector_dropdown</x:String>
+                    </ListBox.Classes>
                     <ListBox.ItemsPanel>
                       <ItemsPanelTemplate>
                         <VirtualizingStackPanel Orientation="Vertical"/>

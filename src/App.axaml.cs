@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -176,6 +178,9 @@ namespace SourceGit
                     else
                         Models.CommitGraph.SetDefaultPens(overrides.GraphPenThickness);
 
+                    // 按当前 SystemAccentColor 亮度自动反算选中前景色（用户未显式指定时）
+                    EnsureListItemSelectedForeground(app, resDic);
+
                     app.Resources.MergedDictionaries.Add(resDic);
                     app._themeOverrides = resDic;
                 }
@@ -187,7 +192,93 @@ namespace SourceGit
             else
             {
                 Models.CommitGraph.SetDefaultPens();
+
+                // 即使没加载外置主题，也按系统强调色反算一次选中前景色
+                var auto = new ResourceDictionary();
+                EnsureListItemSelectedForeground(app, auto);
+                if (auto.Count > 0) app.Resources.MergedDictionaries.Add(auto);
             }
+        }
+
+        private static void EnsureListItemSelectedForeground(Application app, ResourceDictionary resDic)
+        {
+            // 用户已显式指定 BasicColors["ListItem.Selected.Fore"]，完全尊重
+            if (resDic.ContainsKey("Color.ListItem.Selected.Fore")) return;
+
+            // 收集选中背景可能用到的颜色，逐一计算亮度，取最亮的那个作为对比依据
+            // （因为 SystemListLowColor 常是 Accent 的半透明版本，需要把 alpha 考虑进去）
+            var candidates = new List<Color>();
+            var accent = ResolveColor(app, resDic, "SystemAccentColor");
+            var listLow = ResolveColor(app, resDic, "SystemListLowColor");
+            var listMedium = ResolveColor(app, resDic, "SystemListMediumColor");
+
+            if (accent.HasValue) candidates.Add(accent.Value);
+            if (listLow.HasValue) candidates.Add(listLow.Value);
+            if (listMedium.HasValue) candidates.Add(listMedium.Value);
+
+            if (candidates.Count == 0) return;
+
+            // 计算每个颜色 WCAG 相对亮度（sRGB → 线性 → 加权）
+            var maxRelativeLuminance = 0.0;
+            foreach (var c in candidates)
+            {
+                var lum = GetRelativeLuminance(c);
+                if (lum > maxRelativeLuminance) maxRelativeLuminance = lum;
+            }
+
+            // WCAG 阈值：相对亮度 0.179 是区分"深底"和"浅底"的分界
+            // 暗背景 → 白字（#FFFFFF）；亮背景 → 深灰字（#1F1F1F，比纯黑更护眼）
+            // 中间色（0.179 附近）再用 YIQ 微调：若背景偏暖(橙/红/黄)选深青字，偏冷(蓝/绿)选深灰字
+            resDic["Color.ListItem.Selected.Fore"] = maxRelativeLuminance < 0.179
+                ? Colors.White
+                : PickLightForeground(candidates, maxRelativeLuminance);
+        }
+
+        /// <summary>
+        /// WCAG 2.1 相对亮度计算（sRGB → 线性光 → 加权）
+        /// https://www.w3.org/TR/WCAG21/#dfn-relative-luminance
+        /// </summary>
+        private static double GetRelativeLuminance(Color c)
+        {
+            double r = SrgbToLinear(c.R / 255.0);
+            double g = SrgbToLinear(c.G / 255.0);
+            double b = SrgbToLinear(c.B / 255.0);
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        }
+
+        private static double SrgbToLinear(double channel)
+        {
+            return channel <= 0.04045
+                ? channel / 12.92
+                : Math.Pow((channel + 0.055) / 1.055, 2.4);
+        }
+
+        /// <summary>
+        /// 当背景偏亮时，用 YIQ 色相判断该用暖色调还是冷色调前景，
+        /// 比"一律黑色"在暖底（橙/粉/红）上对比度更好。
+        /// </summary>
+        private static Color PickLightForeground(List<Color> candidates, double lum)
+        {
+            // 取候选色中最有代表性的（亮度最高的）
+            Color bg = candidates.OrderByDescending(GetRelativeLuminance).First();
+
+            // YIQ: Y 是亮度，I 是橙/蓝温差，Q 是紫/绿温差
+            double yiq = (0.299 * bg.R + 0.587 * bg.G + 0.114 * bg.B) / 255.0
+                       + (0.596 * (bg.R - bg.G) + 0.321 * (bg.R - bg.B)) / 255.0;
+
+            // I > 0 偏暖（红/橙/黄/粉）→ 用深青色前景；I < 0 偏冷 → 用深灰前景
+            // 这样在任何彩色背景上对比度都比纯黑好
+            return yiq > 0.5
+                ? Color.FromArgb(0xFF, 0x0B, 0x3A, 0x66)  // 深蓝 #0B3A66
+                : Color.FromArgb(0xFF, 0x1F, 0x1F, 0x1F); // 深灰 #1F1F1F（与 FG1 默认值一致）
+        }
+
+        private static Color? ResolveColor(Application app, ResourceDictionary resDic, string key)
+        {
+            if (resDic.ContainsKey(key) && resDic[key] is Color c1) return c1;
+            if (app.TryFindResource(key, app.ActualThemeVariant, out var found) && found is Color c2) return c2;
+            if (app.Resources.TryGetResource(key, app.ActualThemeVariant, out var rv) && rv is Color c3) return c3;
+            return null;
         }
 
         private static Avalonia.Animation.Easings.IEasing CreateEasingByName(string name)

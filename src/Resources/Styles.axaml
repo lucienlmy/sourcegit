@@ -745,7 +745,14 @@
             <Border Name="PART_Background"
                     Background="Transparent"
                     CornerRadius="{TemplateBinding CornerRadius}"
-                    Opacity="0"/>
+                    Opacity="0">
+              <Border.Transitions>
+                <Transitions>
+                  <BrushTransition Property="Background" Duration="{DynamicResource Duration.Hover}" Easing="{DynamicResource Easing.Hover}"/>
+                  <DoubleTransition Property="Opacity" Duration="{DynamicResource Duration.Hover}" Easing="{DynamicResource Easing.Hover}"/>
+                </Transitions>
+              </Border.Transitions>
+            </Border>
 
             <ContentPresenter ContentTemplate="{TemplateBinding ContentTemplate}"
                               Content="{TemplateBinding Content}"
@@ -755,6 +762,9 @@
           </Grid>
         </ControlTemplate>
       </Setter>
+
+      <!-- 选中行统一切换前景色：强制 TextBlock 用高对比色，避免用户自定义深色强调色时文字糊进背景；失焦状态取消选中（恢复原前景色） -->
+      <Setter Property="Foreground" Value="{DynamicResource Brush.FG1}"/>
     </Style>
 
     <Style Selector="^ ListBoxItem:pointerover /template/ Border#PART_Background">
@@ -773,6 +783,69 @@
       <Setter Property="Background" Value="{DynamicResource Brush.Accent}" />
       <Setter Property="Opacity" Value=".8"/>
     </Style>
+  </Style>
+
+  <!-- 选中前景色：仅在 ListBox 处于焦点内时选中项文字变白；点击其他地方失焦后 :focus-within 不命中，
+       文字自动回落到默认 FG1/FG2（黑色），和原始逻辑一致 -->
+  <Style Selector="ListBox.repo_left_content_list:focus-within ListBoxItem:selected">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+  <Style Selector="ListBox.repo_left_content_list:focus-within ListBoxItem:selected TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+  <Style Selector="ListBox.repo_left_content_list:focus-within ListBoxItem:selected TextBlock.info_label">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+  <Style Selector="ListBox.repo_left_content_list:focus-within ListBoxItem:selected Path">
+    <Setter Property="Fill" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+    <Setter Property="Stroke" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+
+  <!-- 右侧分支选择下拉（Push/Pull/新建工作流对话框的分支下拉）：选中前景变色，不选中回落 FG1 -->
+  <Style Selector="ListBox.branch_selector_dropdown ListBoxItem:selected">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+  <Style Selector="ListBox.branch_selector_dropdown ListBoxItem:selected TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+  <Style Selector="ListBox.branch_selector_dropdown ListBoxItem:selected Path">
+    <Setter Property="Fill" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+    <Setter Property="Stroke" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+
+  <!-- 右侧变更列表（CommitChanges/WorkingCopy 等的文件列表）：选中前景变色，失焦恢复默认 -->
+  <Style Selector="ListBox.change_collection_list:focus-within ListBoxItem:selected">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+  <Style Selector="ListBox.change_collection_list:focus-within ListBoxItem:selected TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+  <Style Selector="ListBox.change_collection_list:focus-within ListBoxItem:selected Path">
+    <Setter Property="Fill" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+    <Setter Property="Stroke" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+
+  <!-- 历史记录页 DataGrid（HistoriesCommitList）选中行前景变色 -->
+  <Style Selector="DataGrid.static_scrollbar DataGridRow:selected">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+  <Style Selector="DataGrid.static_scrollbar DataGridRow:selected DataGridCell">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+  <Style Selector="DataGrid.static_scrollbar DataGridRow:selected DataGridCell TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+  <Style Selector="DataGrid.static_scrollbar DataGridRow:selected DataGridCell Path">
+    <Setter Property="Fill" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+    <Setter Property="Stroke" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+  <!-- CommitSubjectPresenter 默认前景：Brush.FG1（它的 C# 默认值是 White，需要覆盖） -->
+  <Style Selector="v|CommitSubjectPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.FG1}"/>
+  </Style>
+  <!-- 历史记录页选中行：CommitSubjectPresenter 前景切成选中色 -->
+  <Style Selector="DataGrid.static_scrollbar DataGridRow:selected v|CommitSubjectPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
   </Style>
 
   <Style Selector="ContextMenu">
@@ -1182,7 +1255,7 @@
       <Setter Property="Opacity" Value="1"/>
     </Style>
     <Style Selector="^:checked Path">
-      <Setter Property="Fill" Value="White"/>
+      <Setter Property="Fill" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
     </Style>
     <Style Selector="^ TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource Brush.FG2}"/>
@@ -1191,7 +1264,7 @@
       <Setter Property="Foreground" Value="{DynamicResource Brush.FG1}"/>
     </Style>
     <Style Selector="^:checked TextBlock">
-      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
     </Style>
   </Style>
 
