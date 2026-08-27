@@ -61,6 +61,22 @@ namespace SourceGit.ViewModels
             }
         }
 
+        [JsonIgnore]
+        public List<string> SystemFontFamilies
+        {
+            get
+            {
+                if (_systemFontFamilies == null)
+                {
+                    _systemFontFamilies = new List<string>();
+                    foreach (var f in Avalonia.Media.FontManager.Current.SystemFonts)
+                        _systemFontFamilies.Add(f.Name);
+                    _systemFontFamilies.Sort(StringComparer.CurrentCulture);
+                }
+                return _systemFontFamilies;
+            }
+        }
+
         public string DefaultFontFamily
         {
             get => _defaultFontFamily;
@@ -787,6 +803,8 @@ namespace SourceGit.ViewModels
         }
 
         private static Preferences _instance = null;
+
+        private List<string> _systemFontFamilies = null;
 
         private bool _isLoading = true;
         private bool _isReadonly = true;

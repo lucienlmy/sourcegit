@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 
 namespace SourceGit.Views
@@ -514,6 +517,40 @@ namespace SourceGit.Views
 
             await this.ShowDialogAsync(new ViewModels.ConfigureCustomActionControls(act.Controls));
             e.Handled = true;
+        }
+
+        private void OnFontComboBoxDropDownOpened(object sender, EventArgs e)
+        {
+            if (sender is not ComboBox)
+                return;
+
+            var comboBox = (ComboBox)sender;
+            comboBox.Classes.Add("dropdown-open");
+
+            var text = comboBox.Text?.Trim();
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            var items = comboBox.ItemsSource as List<string>;
+            if (items == null)
+                return;
+
+            var match = items.FirstOrDefault(x =>
+                string.Equals(x, text, StringComparison.OrdinalIgnoreCase));
+
+            if (match != null)
+            {
+                comboBox.SelectedItem = match;
+                comboBox.ScrollIntoView(match);
+            }
+        }
+
+        private void OnFontComboBoxDropDownClosed(object sender, EventArgs e)
+        {
+            if (sender is not ComboBox comboBox)
+                return;
+
+            comboBox.Classes.Remove("dropdown-open");
         }
 
         private void UpdateGitVersion()

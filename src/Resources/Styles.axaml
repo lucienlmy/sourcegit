@@ -549,6 +549,7 @@
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border1}"/>
     <Setter Property="Background" Value="{DynamicResource Brush.Contents}"/>
     <Setter Property="Foreground" Value="{DynamicResource Brush.FG1}"/>
+    <Setter Property="SelectionForegroundBrush" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
     <Setter Property="ContextFlyout">
       <Setter.Value>
         <MenuFlyout>
@@ -1093,8 +1094,47 @@
       <Setter Property="Background" Value="Transparent"/>
     </Style>
   </Style>
+  <Style Selector="ComboBox.editable /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource Brush.Contents}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border1}"/>
+  </Style>
+  <Style Selector="ComboBox.editable:pointerover /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource Brush.Contents}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+  </Style>
+  <Style Selector="ComboBox.editable:focus-within /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource Brush.Contents}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
+  </Style>
+  <Style Selector="ComboBox.editable /template/ TextBox#PART_EditableTextBox /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="Transparent"/>
+    <Setter Property="Background" Value="Transparent"/>
+  </Style>
+  <Style Selector="ComboBox.editable:pointerover /template/ TextBox#PART_EditableTextBox /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="Transparent"/>
+    <Setter Property="Background" Value="Transparent"/>
+  </Style>
+  <Style Selector="ComboBox.editable:focus-within /template/ TextBox#PART_EditableTextBox /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="Transparent"/>
+    <Setter Property="Background" Value="Transparent"/>
+  </Style>
+  <Style Selector="ComboBox.editable.dropdown-open /template/ TextBox#PART_EditableTextBox">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
   <Style Selector="ComboBoxItem">
     <Setter Property="CornerRadius" Value="3"/>
+  </Style>
+  <Style Selector="ComboBoxItem:selected">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+  <Style Selector="ComboBoxItem:selected TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+  <Style Selector="ComboBox ListBoxItem:selected">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
+  </Style>
+  <Style Selector="ComboBox ListBoxItem:selected TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.ListItem.Selected.Fore}"/>
   </Style>
 
   <Style Selector="CheckBox">
