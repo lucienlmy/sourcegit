@@ -158,7 +158,14 @@ namespace SourceGit.ViewModels
         public List<Models.Remote> Remotes
         {
             get => _remotes;
-            private set => SetProperty(ref _remotes, value);
+            private set
+            {
+                if (SetProperty(ref _remotes, value))
+                {
+                    if (_histories != null)
+                        _histories.HasSingleRemote = value != null && value.Count == 1;
+                }
+            }
         }
 
         public List<Models.Branch> Branches
@@ -175,7 +182,9 @@ namespace SourceGit.ViewModels
                 var oldHead = _currentBranch?.Head;
                 if (SetProperty(ref _currentBranch, value))
                 {
-                    _histories?.NotifyCurrentBranchChanged();
+                    if (_histories != null)
+                        _histories.CurrentBranch = value;
+
                     if (value != null && !value.Head.Equals(oldHead, StringComparison.Ordinal) && _workingCopy is { UseAmend: true })
                         _workingCopy.UseAmend = false;
                 }
@@ -1567,9 +1576,8 @@ namespace SourceGit.ViewModels
             if (selfPage == null)
                 return;
 
-            var root = Path.GetFullPath(Path.Combine(FullPath, submodule));
-            var normalizedPath = root.Replace('\\', '/').TrimEnd('/');
-            App.GetLauncher().OpenRepositoryInTab(normalizedPath, null);
+            var fullpath = Path.GetFullPath(Path.Combine(FullPath, submodule));
+            App.GetLauncher().OpenSubRepository(selfPage, fullpath);
         }
 
         public void AddWorktree()
