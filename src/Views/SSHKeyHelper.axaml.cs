@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Avalonia.Interactivity;
 
 namespace SourceGit.Views
@@ -46,10 +46,13 @@ namespace SourceGit.Views
             message
                 .AppendLine(App.Text("SSHKeyHelper.ConfirmDeletion"))
                 .AppendLine()
-                .Append("- ").Append(key.FullPath).AppendLine()
-                .Append("- ").Append(key.FullPath).Append(".pub");
+                .Append("• ").Append(key.PrivateKeyPath).AppendLine()
+                .Append("• ").Append(key.PublicKeyPath);
 
-            var yes = await App.AskConfirmAsync(message.ToString(), Models.ConfirmButtonType.YesNo);
+            var confirm = new Confirm();
+            confirm.SetData(message.ToString(), Models.ConfirmButtonType.YesNo);
+
+            var yes = await confirm.ShowDialog<bool>(this);
             if (yes)
                 vm.DeleteSelected();
 

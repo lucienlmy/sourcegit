@@ -10,6 +10,12 @@ namespace SourceGit.ViewModels
 {
     public partial class SSHKeyGenerator : ObservableValidator
     {
+        public Models.SSHKeyType Type
+        {
+            get => _type;
+            set => SetProperty(ref _type, value);
+        }
+
         [Required(ErrorMessage = "Name is required.")]
         [RegularExpression(@"^[a-zA-Z0-9_\-]+$", ErrorMessage = "Name can only contain letters, numbers, underscores, and hyphens.")]
         public string Name
@@ -63,11 +69,6 @@ namespace SourceGit.ViewModels
             set => SetProperty(ref _errorMessage, value);
         }
 
-        public SSHKeyGenerator(string baseDir)
-        {
-            _baseDir = baseDir;
-        }
-
         public static ValidationResult ValidatePassphrase(string password, ValidationContext context)
         {
             var instance = (SSHKeyGenerator)context.ObjectInstance;
@@ -95,19 +96,21 @@ namespace SourceGit.ViewModels
             return ValidationResult.Success;
         }
 
-        public bool Run()
+        public Models.SSHKeyPair Run()
         {
             ErrorMessage = string.Empty;
 
             ValidateAllProperties();
             if (HasErrors)
-                return false;
+                return null;
 
+            var type = _type?.Cmdline ?? "-t ed25519";
+            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".ssh");
             var passphrase = _usePassphrase ? _passphrase : string.Empty;
-            var keyFile = Path.Combine(_baseDir, _name);
+            var keyFile = Path.Combine(dir, _name);
             var start = new ProcessStartInfo();
             start.FileName = "ssh-keygen";
-            start.Arguments = $"-q -t ed25519 -N {passphrase.Quoted()} -C {_email.Quoted()} -f {keyFile.Quoted()}";
+            start.Arguments = $"-q {type} -N {passphrase.Quoted()} -C {_email.Quoted()} -f {keyFile.Quoted()}";
             start.UseShellExecute = false;
             start.CreateNoWindow = true;
 
@@ -120,16 +123,21 @@ namespace SourceGit.ViewModels
             catch (Exception e)
             {
                 ErrorMessage = $"Failed to generate SSH key: {e.Message}";
-                return false;
+                return null;
             }
 
-            return true;
+            var publicKeyFile = keyFile + ".pub";
+            if (File.Exists(keyFile) && File.Exists(publicKeyFile))
+                return new Models.SSHKeyPair(keyFile, publicKeyFile);
+
+            ErrorMessage = "Failed to generate SSH key: Key files not found.";
+            return null;
         }
 
         [GeneratedRegex(@"^[0-9a-zA-Z_\-\@\#\$\%\!\&\+\=]+$")]
         private static partial Regex REG_PSWD_FORMAT();
 
-        private string _baseDir;
+        private Models.SSHKeyType _type = Models.SSHKeyType.Supported[0];
         private string _name;
         private string _email;
         private bool _usePassphrase;
