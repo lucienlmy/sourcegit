@@ -4,13 +4,13 @@
                     xmlns:easing="using:Avalonia.Animation.Easings">
   <ResourceDictionary.ThemeDictionaries>
     <ResourceDictionary x:Key="Light">
-      <Color x:Key="Color.Window">#FFF0F5F9</Color>
+      <Color x:Key="Color.Window">#FFF4F4F4</Color>
       <Color x:Key="Color.WindowBorder">#FF999999</Color>
-      <Color x:Key="Color.TitleBar">#FFCFDEEA</Color>
-      <Color x:Key="Color.ToolBar">#FFF0F5F9</Color>
-      <Color x:Key="Color.Popup">#FFF4F8FB</Color>
-      <Color x:Key="Color.PopupBorder">White</Color>
-      <Color x:Key="Color.Contents">#FFFAFAFA</Color>
+      <Color x:Key="Color.TitleBar">#FFF2F0F0</Color>
+      <Color x:Key="Color.ToolBar">#FFF0F3F5</Color>
+      <Color x:Key="Color.Popup">#FFFAFAFA</Color>
+      <Color x:Key="Color.PopupBorder">#FFFFFFFF</Color>
+      <Color x:Key="Color.Contents">#FFFFFFFF</Color>
       <Color x:Key="Color.Badge">#FFB0CEE8</Color>
       <Color x:Key="Color.BadgeFG">#FF1F1F1F</Color>
       <Color x:Key="Color.Conflict">#FF836C2E</Color>
@@ -39,6 +39,7 @@
       <Color x:Key="Color.SubtleHover">#1A000000</Color>
       <!-- ListBox/RadioButton 选中行前景：默认白色，保证在默认强调色（深蓝）选中背景上清晰可辨 -->
       <Color x:Key="Color.ListItem.Selected.Fore">White</Color>
+      <Color x:Key="Color.SubPanel">#FFFBFBFB</Color>
     </ResourceDictionary>
 
     <ResourceDictionary x:Key="Dark">
@@ -77,6 +78,7 @@
       <Color x:Key="Color.SubtleHover">#22FFFFFF</Color>
       <!-- ListBox/RadioButton 选中行前景：默认白色 -->
       <Color x:Key="Color.ListItem.Selected.Fore">White</Color>
+      <Color x:Key="Color.SubPanel">#FF272727</Color>
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -120,4 +122,5 @@
   <!-- 悬浮过渡的默认兜底：160ms + CubicEaseOut。若 ThemeOverrides 设置了 HoverTransitionMs / HoverTransitionEasing 会覆盖本资源 -->
   <sys:TimeSpan x:Key="Duration.Hover">0:0:0.16</sys:TimeSpan>
   <easing:CubicEaseOut x:Key="Easing.Hover"/>
+  <SolidColorBrush x:Key="Brush.SubPanel" Color="{DynamicResource Color.SubPanel}"/>
 </ResourceDictionary>
