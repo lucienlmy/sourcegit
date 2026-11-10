@@ -75,5 +75,6 @@ namespace SourceGit
     [JsonSerializable(typeof(ViewModels.RepositoryNodeMinimalInfo))]
     [JsonSerializable(typeof(Models.DirectoryTreeCacheData))]
     [JsonSerializable(typeof(Models.DirectoryTreeCacheNode))]
+    [JsonSerializable(typeof(List<AI.ApiKey>))]
     internal partial class JsonCodeGen : JsonSerializerContext { }
 }
